@@ -36,30 +36,36 @@ class Telegram:
 
 
     async def request(self, proxy: str, proxy_type: str):
-        if proxy_type == 'socks4': connector = ProxyConnector.from_url(f'socks4://{proxy}')
-        elif proxy_type == 'socks5': connector = ProxyConnector.from_url(f'socks5://{proxy}')
-        elif proxy_type == 'https': connector = ProxyConnector.from_url(f'https://{proxy}')
-        else: connector = ProxyConnector.from_url(f'http://{proxy}')
-        
+        if proxy_type == 'https':
+            connector = ProxyConnector.from_url(f'https://{proxy}')
+        elif proxy_type == 'socks4':
+            if proxy_type == 'socks4': connector = ProxyConnector.from_url(f'socks4://{proxy}')
+        elif proxy_type == 'socks5':
+            connector = ProxyConnector.from_url(f'socks5://{proxy}')
+        else:
+            connector = ProxyConnector.from_url(f'http://{proxy}')
+
         jar = aiohttp.CookieJar(unsafe=True)
         async with aiohttp.ClientSession(cookie_jar=jar, connector=connector) as session:
             try:
                 async with session.get(
-                    f'https://t.me/{self.channel}/{self.post}?embed=1&mode=tme', 
-                    headers={
-                        'referer': f'https://t.me/{self.channel}/{self.post}',
-                        'user-agent': user_agent
-                    }, timeout=aiohttp.ClientTimeout(total=5)
-                ) as embed_response:
+                                f'https://t.me/{self.channel}/{self.post}?embed=1&mode=tme', 
+                                headers={
+                                    'referer': f'https://t.me/{self.channel}/{self.post}',
+                                    'user-agent': user_agent
+                                }, timeout=aiohttp.ClientTimeout(total=5)
+                            ) as embed_response:
                     if jar.filter_cookies(embed_response.url).get('stel_ssid'):
                         views_token = search('data-view="([^"]+)"', await embed_response.text())
                         if views_token:
                             views_response = await session.post(
-                                'https://t.me/v/?views=' + views_token.group(1), 
+                                f'https://t.me/v/?views={views_token[1]}',
                                 headers={
                                     'referer': f'https://t.me/{self.channel}/{self.post}?embed=1&mode=tme',
-                                    'user-agent': user_agent, 'x-requested-with': 'XMLHttpRequest'
-                                }, timeout=aiohttp.ClientTimeout(total=5)
+                                    'user-agent': user_agent,
+                                    'x-requested-with': 'XMLHttpRequest',
+                                },
+                                timeout=aiohttp.ClientTimeout(total=5),
                             )
                             if (
                                 await views_response.text() == "true" 
@@ -130,19 +136,19 @@ class Auto:
     def __init__(self):
         self.proxies = []
         try: 
-            with open(f'auto/http.txt', 'r') as file:
+            with open('auto/http.txt', 'r') as file:
                 self.http_sources = file.read().splitlines()
-                
-            with open(f'auto/socks4.txt', 'r') as file:
+
+            with open('auto/socks4.txt', 'r') as file:
                 self.socks4_sources = file.read().splitlines()
-                
-            with open(f'auto/http.txt', 'r') as file:
+
+            with open('auto/http.txt', 'r') as file:
                 self.socks5_sources = file.read().splitlines()
-                
+
         except FileNotFoundError: 
             print(' [ Error ] auto file not found!')
             exit()
-        
+
         print(' [ WAIT ] Scraping proxies... ')
         asyncio.run(self.init())
 
